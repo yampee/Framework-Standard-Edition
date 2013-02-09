@@ -62,12 +62,11 @@ class Yampee_Cache_Manager
 	/**
 	 * @param string $key
 	 * @param mixed  $value
-	 * @param int    $expire
 	 * @return Yampee_Cache_Manager
 	 */
-	public function set($key, $value, $expire = 0)
+	public function set($key, $value)
 	{
-		$this->driver->set($key, $value, $expire);
+		$this->driver->set($key, $value);
 
 		return $this;
 	}

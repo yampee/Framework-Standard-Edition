@@ -29,6 +29,10 @@ class Yampee_Log_Storage_Filesystem implements Yampee_Log_Storage_Interface
 		$this->logFile = (string) $logFile;
 
 		if (! file_exists($this->logFile)) {
+			if (! file_exists(dirname($this->logFile))) {
+				mkdir(dirname($this->logFile), 777, true);
+			}
+
 			file_put_contents($this->logFile, '');
 		}
 	}
@@ -50,5 +54,24 @@ class Yampee_Log_Storage_Filesystem implements Yampee_Log_Storage_Interface
 		file_put_contents($this->logFile, file_get_contents($this->logFile).$message);
 
 		return $this;
+	}
+
+	/**
+	 * @param string $logFile
+	 * @return Yampee_Log_Storage_Filesystem
+	 */
+	public function setLogFile($logFile)
+	{
+		$this->logFile = $logFile;
+
+		return $this;
+	}
+
+	/**
+	 * @return string
+	 */
+	public function getLogFile()
+	{
+		return $this->logFile;
 	}
 }

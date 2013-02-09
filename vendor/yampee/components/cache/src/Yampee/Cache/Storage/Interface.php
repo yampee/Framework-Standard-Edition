@@ -52,8 +52,7 @@ interface Yampee_Cache_Storage_Interface
 	 *
 	 * @param string $key
 	 * @param mixed  $value
-	 * @param int    $expire
 	 * @return mixed
 	 */
-	public function set($key, $value, $expire = 0);
+	public function set($key, $value);
 }

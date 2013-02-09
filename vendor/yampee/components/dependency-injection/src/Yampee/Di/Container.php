@@ -100,6 +100,25 @@ class Yampee_Di_Container
 	}
 
 	/**
+	 * @param array $definitions
+	 * @return Yampee_Di_Container
+	 */
+	public function setDefinitions(array $definitions)
+	{
+		$this->definitions = $definitions;
+
+		return $this;
+	}
+
+	/**
+	 * @return array
+	 */
+	public function getDefinitions()
+	{
+		return $this->definitions;
+	}
+
+	/**
 	 * @return array
 	 */
 	public function getAll()

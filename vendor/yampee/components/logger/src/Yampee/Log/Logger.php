@@ -161,6 +161,14 @@ class Yampee_Log_Logger
 	}
 
 	/**
+	 * @return Yampee_Log_Storage_Interface
+	 */
+	public function getStorage()
+	{
+		return $this->storage;
+	}
+
+	/**
 	 * @param Yampee_Log_Storage_Interface $storage
 	 * @return Yampee_Log_Logger
 	 */

@@ -70,7 +70,7 @@ class Yampee_Cache_Storage_Filesystem implements Yampee_Cache_Storage_Interface
 			return $default;
 		}
 
-		return $this->cache[$key]['value'];
+		return $this->cache[$key];
 	}
 
 	/**
@@ -79,30 +79,17 @@ class Yampee_Cache_Storage_Filesystem implements Yampee_Cache_Storage_Interface
 	 */
 	public function has($key)
 	{
-		if (isset($this->cache[$key])) {
-			if ($this->cache[$key]['expire'] != 0 && $this->cache[$key]['expire'] < time()) {
-				unset($this->cache[$key]);
-				return false;
-			} else {
-				return true;
-			}
-		}
-
-		return false;
+		return isset($this->cache[$key]);
 	}
 
 	/**
 	 * @param string $key
 	 * @param mixed  $value
-	 * @param int    $expire
 	 * @return Yampee_Cache_Storage_Filesystem
 	 */
-	public function set($key, $value, $expire = 0)
+	public function set($key, $value)
 	{
-		$this->cache[$key] = array(
-			'expire' => time() + $expire,
-			'value' => $value
-		);
+		$this->cache[$key] = $value;
 
 		return $this;
 	}

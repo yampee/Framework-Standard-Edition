@@ -71,7 +71,7 @@ class Yampee_Kernel
 		 *
 		 * Different environments will require different levels of error reporting.
 		 * By default development will show errors but testing and production will hide them.
-		 */
+		 *
 		if($inDev) {
 			error_reporting(-1);
 			ini_set('display_errors', 1);
@@ -93,7 +93,7 @@ class Yampee_Kernel
 		));
 
 		// Annotations reader
-		$this->annotationsReader = new Yampee_Annotations_Reader();
+		$this->annotationsReader = new Yampee_Annotations_Reader($inDev);
 
 		// Configuration
 		$this->config = $this->loadConfig();
@@ -181,8 +181,6 @@ class Yampee_Kernel
 			));
 		}
 
-		Yampee_Benchmark::markAs('request.dispatched');
-
 		// Call the action
 		$this->container->get('logger')->debug('Action found: '.$route->getAction());
 
@@ -212,6 +210,8 @@ class Yampee_Kernel
 
 		$response = $action->invokeArgs($controller, $arguments);
 
+		Yampee_Benchmark::markAs('request.dispatched');
+
 		if(! $response instanceof Yampee_Http_Response) {
 			throw new LogicException(sprintf(
 				'Action %s must return a Yampee_Http_Response object (%s given).',
@@ -223,11 +223,6 @@ class Yampee_Kernel
 		$this->annotationsReader->registerAnnotation(new Yampee_Http_Bridge_Annotation_Cache($response));
 		$this->annotationsReader->readReflector($action);
 
-		$this->container->get('logger')->debug('Response sent');
-
-		Yampee_Benchmark::markAs('response.sent');
-		$this->container->get('event_dispatcher')->notify('kernel.response', array($response));
-
 		// If there is no problem, we clear logs and write a short description
 		$this->container->get('logger')->clearCurrentScriptLog();
 		$this->container->get('logger')->debug(sprintf(
@@ -235,6 +230,11 @@ class Yampee_Kernel
 			$request->getMethod(), $locator->getRequestUri(), $request->getClientIp(),
 			$route->getAction()
 		));
+
+		$this->container->get('logger')->debug('Response sent');
+
+		Yampee_Benchmark::markAs('response.sent');
+		$this->container->get('event_dispatcher')->notify('kernel.response', array($response));
 
 		// Finally send the response
 		return $response;
@@ -269,38 +269,44 @@ class Yampee_Kernel
 	 */
 	protected function loadContainer()
 	{
+		/*
+		 * Boot the container
+		 *
+		 * Try to load services list from cache if the production mode is enabled
+		 */
 		$container = new Yampee_Di_Container();
 
-		$this->annotationsReader->registerAnnotation(new Yampee_Di_Bridge_Annotation_Service($container));
+		if ($this->inDev || ! $this->cache->has('services')) {
+			$this->annotationsReader->registerAnnotation(new Yampee_Di_Bridge_Annotation_Service($container));
 
-		/*
-		 * Find all the services files (in src/services) and associate their classes.
-		 */
-		$it = new RecursiveIteratorIterator(new RecursiveDirectoryIterator(
-			__APP__.'/src/services'
-		));
+			// Find all the services files (in src/services) and associate their classes.
+			$it = new RecursiveIteratorIterator(new RecursiveDirectoryIterator(
+				__APP__.'/src/services'
+			));
 
-		$classes = array();
+			$classes = array();
 
-		while($it->valid()) {
-			if (! $it->isDot()) {
-				$classes[] = trim(str_replace(
-					array('\\', '/'), '_',
-					$it->getSubPath().'_'.$it->getBasename('.php')
-				), '_');
+			while($it->valid()) {
+				if (! $it->isDot()) {
+					$classes[] = trim(str_replace(
+						array('\\', '/'), '_',
+						$it->getSubPath().'_'.$it->getBasename('.php')
+					), '_');
+				}
+
+				$it->next();
 			}
 
-			$it->next();
-		}
-
-		/*
-		 * Read annotations on classes (if they exists) and register them in the container
-		 * to build it then
-		 */
-		foreach ($classes as $class) {
-			if (class_exists($class)) {
-				$this->annotationsReader->readReflector(new ReflectionClass($class));
+			// Read annotations on classes (if they exists) and register them in the container
+			foreach ($classes as $class) {
+				if (class_exists($class)) {
+					$this->annotationsReader->readReflector(new ReflectionClass($class));
+				}
 			}
+
+			$this->cache->set('services', $container->getDefinitions());
+		} else {
+			$container->setDefinitions($this->cache->get('services'));
 		}
 
 		return $container;
@@ -343,74 +349,101 @@ class Yampee_Kernel
 	 */
 	protected function loadRouter()
 	{
+		/*
+		 * Boot the router
+		 *
+		 * Try to load routes from cache if the production mode is enabled
+		 */
 		$router = $this->getContainer()->get('router');
 
 		$this->annotationsReader->registerAnnotation(new Yampee_Routing_Bridge_Annotation_Route($router));
 
-		/*
-		 * Find all the controllers files (in src/controllers)
-		 */
-		$it = new RecursiveIteratorIterator(new RecursiveDirectoryIterator(
-			__APP__.'/src/controllers'
-		));
+		if ($this->inDev || ! $this->cache->has('routes')) {
+			// Find all the controllers files (in src/controllers)
+			$it = new RecursiveIteratorIterator(new RecursiveDirectoryIterator(
+				__APP__.'/src/controllers'
+			));
 
-		$classes = array();
+			$classes = array();
 
-		while($it->valid()) {
-			if (! $it->isDot()) {
-				$classes[] = trim(str_replace(
-					array('\\', '/'), '_',
-					$it->getSubPath().'_'.$it->getBasename('.php')
-				), '_');
-			}
-
-			$it->next();
-		}
-
-		/*
-		 * Find controllers, actions and routes
-		 */
-		foreach ($classes as $class) {
-			if (class_exists($class)) {
-
-				// Prefix
-				$reflector = new ReflectionClass($class);
-				$classAnnotations = $this->annotationsReader->readReflector($reflector);
-
-				$prefix = '';
-
-				foreach ($classAnnotations as $classAnnotation) {
-					if ($classAnnotation instanceof Yampee_Routing_Bridge_Annotation_Route) {
-						$prefix = $classAnnotation->pattern;
-					}
+			while($it->valid()) {
+				if (! $it->isDot()) {
+					$classes[] = trim(str_replace(
+						array('\\', '/'), '_',
+						$it->getSubPath().'_'.$it->getBasename('.php')
+					), '_');
 				}
 
-				// Routes
-				$methods = $reflector->getMethods();
+				$it->next();
+			}
 
-				foreach ($methods as $method) {
-					if (substr($method->getName(), -6) == 'Action') {
-						$annotations = $this->annotationsReader->readReflector($method);
+			$cache = array();
 
-						foreach ($annotations as $annotation) {
-							if ($annotation instanceof Yampee_Routing_Bridge_Annotation_Route) {
-								$pattern = $prefix.$annotation->pattern;
+			// Find controllers, actions and routes
+			foreach ($classes as $class) {
+				if (class_exists($class)) {
 
-								if (rtrim($prefix.$annotation->pattern, '/') != '') {
-									$pattern = rtrim($pattern, '/');
+					// Prefix
+					$reflector = new ReflectionClass($class);
+					$classAnnotations = $this->annotationsReader->readReflector($reflector);
+
+					$prefix = '';
+
+					foreach ($classAnnotations as $classAnnotation) {
+						if ($classAnnotation instanceof Yampee_Routing_Bridge_Annotation_Route) {
+							$prefix = $classAnnotation->pattern;
+						}
+					}
+
+					// Routes
+					$methods = $reflector->getMethods();
+
+					foreach ($methods as $method) {
+						if (substr($method->getName(), -6) == 'Action') {
+							$annotations = $this->annotationsReader->readReflector($method);
+
+							foreach ($annotations as $annotation) {
+								if ($annotation instanceof Yampee_Routing_Bridge_Annotation_Route) {
+									$pattern = $prefix.$annotation->pattern;
+
+									if (rtrim($prefix.$annotation->pattern, '/') != '') {
+										$pattern = rtrim($pattern, '/');
+									}
+
+									$this->container->get('router')->addRoute(new Yampee_Routing_Route(
+										$annotation->name,
+										$pattern,
+										$reflector->getName().'::'.$method->getName(),
+										$annotation->defaults,
+										$annotation->requirements
+									));
+
+									$cache[] = array(
+										'name' => $annotation->name,
+										'pattern' => $pattern,
+										'action' => $reflector->getName().'::'.$method->getName(),
+										'defaults' => $annotation->defaults,
+										'requirements' => $annotation->requirements
+									);
 								}
-
-								$this->container->get('router')->addRoute(new Yampee_Routing_Route(
-									$annotation->name,
-									$pattern,
-									$reflector->getName().'::'.$method->getName(),
-									$annotation->defaults,
-									$annotation->requirements
-								));
 							}
 						}
 					}
 				}
+			}
+
+			$this->cache->set('routes', $cache);
+		} else {
+			$routes = $this->cache->get('routes');
+
+			foreach ($routes as $route) {
+				$this->container->get('router')->addRoute(new Yampee_Routing_Route(
+					$route['name'],
+					$route['pattern'],
+					$route['action'],
+					$route['defaults'],
+					$route['requirements']
+				));
 			}
 		}
 	}

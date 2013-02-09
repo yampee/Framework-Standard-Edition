@@ -38,6 +38,14 @@ class Yampee_Benchmark
 			self::start();
 		}
 
-		self::$times[$name] = microtime(true);
+		self::$times[$name] = (microtime(true) - self::$times['start']) * 1000;
+	}
+
+	/**
+	 * @return array
+	 */
+	static public function getAll()
+	{
+		return self::$times;
 	}
 }
