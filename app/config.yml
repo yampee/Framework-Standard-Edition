@@ -1,0 +1,28 @@
+
+# Yampee Configuration
+framework:
+    default_locale:         en
+    translator_fallback:    en
+    secret:                 ce1da10339b85a1fd1d01f8dc556f4a8
+    log_file:               %kernel.root_dir%/app/logs/app.log
+
+# Twig Configuration
+twig:
+    debug:              %kernel.in_dev%
+    charset:            utf-8
+    strict_variables:   %kernel.in_dev%
+    views_dir:
+        - %kernel.root_dir%/app/views
+        - %kernel.root_dir%/src/views
+    cache_dir:          %kernel.root_dir%/app/cache/twig
+
+# Doctrine Configuration
+database:
+    driver:     mysql
+    host:       localhost
+    port:       3306
+    database:   test
+    username:   root
+    password:   ""
+    charset:    UTF8
+
