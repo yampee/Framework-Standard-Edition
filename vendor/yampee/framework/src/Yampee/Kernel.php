@@ -89,7 +89,7 @@ class Yampee_Kernel
 
 		// Cache manager
 		$this->cache = new Yampee_Cache_Manager(new Yampee_Cache_Storage_Filesystem(
-			__APP__.'/app/cache/app.php'
+			__APP__.'/app/cache/app.cache'
 		));
 
 		// Annotations reader
