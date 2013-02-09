@@ -334,8 +334,7 @@ class Yampee_Di_Container
 				if (isset($definitions[$reference])
 					&& in_array($definition['name'], $definitions[$reference]['references'])) {
 						throw new LogicException(sprintf(
-							'Services %s and %s have an infinite recursive reference between themselves.
-							The container build can not be completed.',
+							'Circular reference betwenn %s and %s. The container build can not be completed.',
 							$definition['name'], $definitions[$reference]['name']
 						));
 				}

@@ -20,11 +20,17 @@ class Yampee_Benchmark
 	static protected $times;
 
 	/**
+	 * @var integer
+	 */
+	static protected $startMemoryUsage;
+
+	/**
 	 * Start the benhmark.
 	 */
 	static public function start()
 	{
 		self::$times = array('start' => microtime(true));
+		self::$startMemoryUsage = memory_get_usage();
 	}
 
 	/**
@@ -44,8 +50,16 @@ class Yampee_Benchmark
 	/**
 	 * @return array
 	 */
-	static public function getAll()
+	static public function getTimes()
 	{
 		return self::$times;
+	}
+
+	/**
+	 * @return array
+	 */
+	static public function getMemoryUsage()
+	{
+		return (memory_get_usage() - self::$startMemoryUsage) / (1024 * 1024);
 	}
 }
