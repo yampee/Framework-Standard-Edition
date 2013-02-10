@@ -22,6 +22,3 @@ require 'app/autoload.php';
 $kernel = new Yampee_Kernel($developementEnabled);
 $kernel ->handle(Yampee_Http_Request::createFromGlobals())
 		->send();
-
-var_dump(Yampee_Benchmark::getTimes());
-var_dump(Yampee_Benchmark::getMemoryUsage());

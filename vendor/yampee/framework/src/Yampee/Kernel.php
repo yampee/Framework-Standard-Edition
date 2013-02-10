@@ -15,6 +15,11 @@
 class Yampee_Kernel
 {
 	/**
+	 * Yampee version
+	 */
+	const VERSION = '0.1-dev';
+
+	/**
 	 * Whether the kernel is in dev or not
 	 *
 	 * @var boolean
@@ -102,9 +107,13 @@ class Yampee_Kernel
 		// Container and services
 		$this->container = $this->loadContainer();
 
+		$locator = $this->generateRootUrl(Yampee_Http_Request::createFromGlobals());
+
 		$this->container->setParameters($this->config->getArrayCopy());
 		$this->container->setParameter('kernel.in_dev', $this->inDev);
 		$this->container->setParameter('kernel.root_dir', __APP__);
+		$this->container->setParameter('kernel.root_url', $locator->getRootUrl());
+		$this->container->setParameter('kernel.document_root', $locator->getDocumentRoot());
 
 		$this->container->set('cache', $this->cache);
 		$this->container->set('config', $this->config);
@@ -317,6 +326,8 @@ class Yampee_Kernel
 	 */
 	protected function loadTwigExtensions()
 	{
+		$this->container->get('twig')->addGlobal('yampee_version', self::VERSION);
+
 		$extensions = $this->container->findByTag('twig.extension');
 
 		foreach ($extensions as $extension) {
@@ -504,13 +515,14 @@ class Yampee_Kernel
 				'class' => 'Twig_Environment',
 				'arguments' => array('@twig.loader', array(
 					'debug' => '%twig.debug%',
-					'charset' => '%twig.debug%',
+					'charset' => '%twig.charset%',
 					'cache' => '%twig.cache_dir%',
 					'strict_variables' => '%twig.strict_variables%',
 				)),
 			),
 			'twig.extensions.core' => array(
 				'class' => 'Yampee_Twig_Core',
+				'arguments' => array('%kernel.root_url%'),
 				'tags' => array(
 					array('name' => 'twig.extension')
 				)

@@ -2,9 +2,43 @@
 <html>
 	<head>
 		<meta charset="UTF-8" />
+
 		<title>Yampee</title>
+
+		<link type="text/css" rel="stylesheet" href="{{ asset('css/yampee.css') }}" />
 	</head>
 	<body>
-		test
+		<div class="container">
+			<h1>Welcome to Yampee!</h1>
+
+			<h4>Welcome to Yampee - a PHP 5.2 modern, fast and secure framework you will love!</h4>
+
+			<p>
+				The page you are looking at is being generated dynamically by Yampee.
+			</p>
+
+			<h3>Where can I start?</h3>
+
+			<p>
+				If you would like to edit this page you'll find it located at:
+				<code>src/views/index.html.twig</code>
+			</p>
+
+			<p>
+				The corresponding controller for this page is found at:
+				<code>src/controllers/DefaultController.php</code>
+			</p>
+
+			<p>
+				If you are exploring Yampee for the very first time, you should start by reading the
+				<a href="">User Guide</a>.
+			</p>
+		</div>
+
+		<footer>
+			<p>
+				Yampee {{ yampee_version }}
+			</p>
+		</footer>
 	</body>
 </html>

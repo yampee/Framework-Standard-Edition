@@ -9,7 +9,7 @@ framework:
 # Twig Configuration
 twig:
     debug:              %kernel.in_dev%
-    charset:            utf-8
+    charset:            UTF8
     strict_variables:   %kernel.in_dev%
     views_dir:
         - %kernel.root_dir%/app/views

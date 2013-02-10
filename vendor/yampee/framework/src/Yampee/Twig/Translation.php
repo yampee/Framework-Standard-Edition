@@ -18,6 +18,6 @@ class Yampee_Twig_Translation extends Twig_Extension
 
 	public function getName()
 	{
-		return 'translation';
+		return 'yampee_translation';
 	}
 }
