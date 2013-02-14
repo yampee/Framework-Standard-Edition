@@ -38,7 +38,6 @@ class Yampee_Twig_Core extends Yampee_Twig_Extension
 	public function getFunctions()
 	{
 		return array(
-			new Twig_SimpleFunction('dump', 'var_dump'),
 			new Twig_SimpleFunction('asset', array($this, 'getAsset')),
 		);
 	}

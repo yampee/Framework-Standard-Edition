@@ -70,4 +70,25 @@ class Yampee_Cache_Manager
 
 		return $this;
 	}
+
+	/**
+	 * @param string $key
+	 * @return Yampee_Cache_Manager
+	 */
+	public function remove($key)
+	{
+		$this->driver->remove($key);
+
+		return $this;
+	}
+
+	/**
+	 * @return Yampee_Cache_Manager
+	 */
+	public function close()
+	{
+		$this->driver->close();
+
+		return $this;
+	}
 }

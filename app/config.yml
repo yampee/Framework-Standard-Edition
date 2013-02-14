@@ -6,6 +6,7 @@ framework:
     secret:                 ce1da10339b85a1fd1d01f8dc556f4a8
     log_file:               %kernel.root_dir%/app/logs/app.log
 
+
 # Twig Configuration
 twig:
     debug:              %kernel.in_dev%

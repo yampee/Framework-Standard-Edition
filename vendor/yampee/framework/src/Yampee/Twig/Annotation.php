@@ -1,45 +1,48 @@
 <?php
 
 /*
- * Yampee Components
- * Open source web development components for PHP 5.
+ * Yampee Framework
+ * Open source web development framework for PHP 5.
  *
- * @package Yampee Components
+ * @package Yampee Framework
  * @author Titouan Galopin <galopintitouan@gmail.com>
  * @link http://titouangalopin.com
  */
 
-/**
- * HTTP Cache-Control annotation
- *
- * @author Titouan Galopin <galopintitouan@gmail.com>
- */
-class Yampee_Http_Bridge_Annotation_Cache extends Yampee_Annotations_Definition_Abstract
+class Yampee_Twig_Annotation extends Yampee_Annotations_Definition_Abstract
 {
 	/**
 	 * @var Yampee_Http_Response
 	 */
 	protected $response;
 
+	/**
+	 * @var array
+	 */
+	protected $responseParameters;
+
+	/**
+	 * @var Twig_Environment
+	 */
+	protected $twig;
+
 	/*
 	 * Annotation parameters
 	 */
-	public $public = false;
-	public $maxAge = 300;
-	public $mustRevalidate = false;
+	public $template;
 
 	/**
 	 * Constructor
 	 *
 	 * @param Yampee_Http_Response $response
+	 * @param array                $responseParameters
+	 * @param Twig_Environment     $twig
 	 */
-	public function __construct(Yampee_Http_Response $response = null)
+	public function __construct(Yampee_Http_Response $response, array $responseParameters, Twig_Environment $twig)
 	{
-		if (empty($response)) {
-			$response = new Yampee_Http_Response();
-		}
-
 		$this->response = $response;
+		$this->responseParameters = $responseParameters;
+		$this->twig = $twig;
 	}
 
 	/**
@@ -50,23 +53,15 @@ class Yampee_Http_Bridge_Annotation_Cache extends Yampee_Annotations_Definition_
 	 */
 	public function execute(Reflector $reflector)
 	{
-		$cacheControl = array();
-
-		if ($this->public) {
-			$cacheControl[] = 'public';
+		if (! empty($this->template)) {
+			$template = $this->template;
 		} else {
-			$cacheControl[] = 'private';
+			$template = str_replace('Controller', '', $reflector->getDeclaringClass()->getName()).'/';
+			$template .= str_replace('Action', '', $reflector->getName());
+			$template .= '.html.twig';
 		}
 
-		if (is_int($this->maxAge)) {
-			$cacheControl[] = 'max-age='.$this->maxAge;
-		}
-
-		if ($this->mustRevalidate) {
-			$cacheControl[] = 'must-revalidate';
-		}
-
-		$this->response->getHeaders()->set('Cache-Control', implode(', ', $cacheControl));
+		$this->response->setContent($this->twig->render($template, $this->responseParameters));
 	}
 
 	/**
@@ -76,7 +71,7 @@ class Yampee_Http_Bridge_Annotation_Cache extends Yampee_Annotations_Definition_
 	 */
 	public function getAnnotationName()
 	{
-		return 'HttpCache';
+		return 'Template';
 	}
 
 	/**
@@ -89,9 +84,7 @@ class Yampee_Http_Bridge_Annotation_Cache extends Yampee_Annotations_Definition_
 		$rootNode = new Yampee_Annotations_Definition_RootNode();
 
 		$rootNode
-			->booleanAttr('public', false)
-			->numericAttr('maxAge', false)
-			->booleanAttr('mustRevalidate', false)
+			->anonymousAttr(0, 'template', false)
 		;
 
 		return $rootNode;

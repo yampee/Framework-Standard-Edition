@@ -93,4 +93,15 @@ class Yampee_Cache_Storage_Filesystem implements Yampee_Cache_Storage_Interface
 
 		return $this;
 	}
+
+	/**
+	 * @param string $key
+	 * @return bool
+	 */
+	public function remove($key)
+	{
+		unset($this->cache[$key]);
+
+		return ! $this->has($key);
+	}
 }

@@ -35,7 +35,7 @@ class Yampee_Annotations_Lexer
 		'/^([a-z0-9_.\-]+)/i' => 'T_KEYWORD',
 		'/^(\'.+\')/iU' => 'T_STRING',
 		'/^(".+")/iU' => 'T_STRING',
-		'/^(\(.+\))/isU' => 'T_ARGS',
+		'/^(\(.*\))/isU' => 'T_ARGS',
 		'/^(\{.*\})/isU' => 'T_ARRAY',
 		'/^(\[.*\])/isU' => 'T_ARRAY_SIMPLE',
 		'/^(.+)/iU' => 'T_OTHER',

@@ -126,10 +126,6 @@ class Yampee_Kernel
 
 		Yampee_Benchmark::markAs('container.booted');
 
-		if ($this->inDev) {
-			$this->container->get('logger')->disable();
-		}
-
 		Yampee_ExceptionHandler::$twig = $this->container->get('twig');
 		Yampee_ExceptionHandler::$logger = $this->container->get('logger');
 
@@ -181,6 +177,36 @@ class Yampee_Kernel
 			);
 		}
 
+		/*
+		 * Read Server-Side cache to optimize load
+		 */
+		$cacheManager = new Yampee_Cache_Manager(new Yampee_Cache_Storage_Filesystem(
+			__APP__.'/app/cache/actions.cache'
+		));
+
+		if ($cacheManager->has($locator->getRequestUri())) {
+			$cache = $cacheManager->get($locator->getRequestUri());
+
+			if ($cache['expire'] < time()) {
+				$cacheManager->remove($locator->getRequestUri());
+			} else {
+				$response = $cache['response'];
+
+				// We clear logs and write a shorter description
+				$this->container->get('logger')->clearCurrentScriptLog();
+				$this->container->get('logger')->debug(sprintf(
+					'%s "%s" handled from %s, loaded from cache',
+					$request->getMethod(), $locator->getRequestUri(), $request->getClientIp()
+				));
+
+				$this->container->get('logger')->debug('Response sent');
+
+				$this->container->get('event_dispatcher')->notify('kernel.response', array($response));
+
+				return $response;
+			}
+		}
+
 		// Dispatch the action
 		$route = $this->getContainer()->get('router')->find($locator->getRequestUri());
 
@@ -217,7 +243,26 @@ class Yampee_Kernel
 			}
 		}
 
+		$this->container->setParameter('kernel.benchmark', Yampee_Benchmark::getTimes());
+		$this->container->setParameter('kernel.memory_usage', Yampee_Benchmark::getMemoryUsage());
+
+		$this->container->get('twig')->addGlobal('app', $this->container);
+
 		$response = $action->invokeArgs($controller, $arguments);
+
+		/*
+		 * Catch @Template() annotation
+		 */
+		if (is_array($response)) {
+			$responseParameters = $response;
+			$response = new Yampee_Http_Response();
+
+			$this->annotationsReader->registerAnnotation(
+				new Yampee_Twig_Annotation($response, $responseParameters, $this->getContainer()->get('twig'))
+			);
+
+			$this->annotationsReader->readReflector($action);
+		}
 
 		Yampee_Benchmark::markAs('request.dispatched');
 
@@ -232,7 +277,13 @@ class Yampee_Kernel
 		$this->annotationsReader->registerAnnotation(new Yampee_Http_Bridge_Annotation_Cache($response));
 		$this->annotationsReader->readReflector($action);
 
-		// If there is no problem, we clear logs and write a short description
+		// Read the Server-Side cache annotation
+		$this->annotationsReader->registerAnnotation(
+			new Yampee_Cache_Annotation($this->locator->getRequestUri(), $response)
+		);
+		$this->annotationsReader->readReflector($action);
+
+		// If there is no problem, we clear logs and write a shorter description
 		$this->container->get('logger')->clearCurrentScriptLog();
 		$this->container->get('logger')->debug(sprintf(
 			'%s "%s" handled from %s, calling %s',

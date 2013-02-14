@@ -10,36 +10,46 @@
  */
 
 /**
- * HTTP Cache-Control annotation
+ * Server-Side cache annotation
  *
  * @author Titouan Galopin <galopintitouan@gmail.com>
  */
-class Yampee_Http_Bridge_Annotation_Cache extends Yampee_Annotations_Definition_Abstract
+class Yampee_Cache_Annotation extends Yampee_Annotations_Definition_Abstract
 {
+	/**
+	 * @var string
+	 */
+	protected $requestUri;
+
 	/**
 	 * @var Yampee_Http_Response
 	 */
 	protected $response;
 
+	/**
+	 * @var Yampee_Cache_Manager
+	 */
+	protected $cacheWriter;
+
 	/*
 	 * Annotation parameters
 	 */
-	public $public = false;
-	public $maxAge = 300;
-	public $mustRevalidate = false;
+	public $expire;
 
 	/**
 	 * Constructor
 	 *
+	 * @param string               $requestUri
 	 * @param Yampee_Http_Response $response
 	 */
-	public function __construct(Yampee_Http_Response $response = null)
+	public function __construct($requestUri, Yampee_Http_Response $response)
 	{
-		if (empty($response)) {
-			$response = new Yampee_Http_Response();
-		}
-
+		$this->requestUri = $requestUri;
 		$this->response = $response;
+
+		$this->cacheWriter = new Yampee_Cache_Manager(new Yampee_Cache_Storage_Filesystem(
+			__APP__.'/app/cache/actions.cache'
+		));
 	}
 
 	/**
@@ -50,23 +60,12 @@ class Yampee_Http_Bridge_Annotation_Cache extends Yampee_Annotations_Definition_
 	 */
 	public function execute(Reflector $reflector)
 	{
-		$cacheControl = array();
+		$this->cacheWriter->set($this->requestUri, array(
+			'expire' => time() + $this->expire,
+			'response' => $this->response
+		));
 
-		if ($this->public) {
-			$cacheControl[] = 'public';
-		} else {
-			$cacheControl[] = 'private';
-		}
-
-		if (is_int($this->maxAge)) {
-			$cacheControl[] = 'max-age='.$this->maxAge;
-		}
-
-		if ($this->mustRevalidate) {
-			$cacheControl[] = 'must-revalidate';
-		}
-
-		$this->response->getHeaders()->set('Cache-Control', implode(', ', $cacheControl));
+		$this->cacheWriter->close();
 	}
 
 	/**
@@ -76,7 +75,7 @@ class Yampee_Http_Bridge_Annotation_Cache extends Yampee_Annotations_Definition_
 	 */
 	public function getAnnotationName()
 	{
-		return 'HttpCache';
+		return 'Cache';
 	}
 
 	/**
@@ -87,12 +86,7 @@ class Yampee_Http_Bridge_Annotation_Cache extends Yampee_Annotations_Definition_
 	public function getAttributesRules()
 	{
 		$rootNode = new Yampee_Annotations_Definition_RootNode();
-
-		$rootNode
-			->booleanAttr('public', false)
-			->numericAttr('maxAge', false)
-			->booleanAttr('mustRevalidate', false)
-		;
+		$rootNode->numericAttr('expire', true);
 
 		return $rootNode;
 	}

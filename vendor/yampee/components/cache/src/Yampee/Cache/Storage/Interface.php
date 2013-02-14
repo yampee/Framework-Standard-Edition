@@ -55,4 +55,12 @@ interface Yampee_Cache_Storage_Interface
 	 * @return mixed
 	 */
 	public function set($key, $value);
+
+	/**
+	 * Removea key and its value from cache
+	 *
+	 * @param string $key
+	 * @return mixed
+	 */
+	public function remove($key);
 }
