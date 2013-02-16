@@ -1,10 +1,9 @@
 
 # Yampee Configuration
 framework:
-    default_locale:         en
-    translator_fallback:    en
-    secret:                 ce1da10339b85a1fd1d01f8dc556f4a8
-    log_file:               %kernel.root_dir%/app/logs/app.log
+    locale:     en
+    secret:     ce1da10339b85a1fd1d01f8dc556f4a8
+    log_file:   %kernel.root_dir%/app/logs/app.log
 
 
 # Twig Configuration

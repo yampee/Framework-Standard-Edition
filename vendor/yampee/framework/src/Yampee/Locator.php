@@ -18,6 +18,11 @@ class Yampee_Locator
 	/**
 	 * @var string
 	 */
+	protected $httpHost;
+
+	/**
+	 * @var string
+	 */
 	protected $documentRoot;
 
 	/**
@@ -31,12 +36,14 @@ class Yampee_Locator
 	protected $requestUri;
 
 	/**
+	 * @param $httpHost
 	 * @param $documentRoot
 	 * @param $rootUrl
 	 * @param $requestUri
 	 */
-	public function __construct($documentRoot, $rootUrl, $requestUri)
+	public function __construct($httpHost, $documentRoot, $rootUrl, $requestUri)
 	{
+		$this->httpHost = $httpHost;
 		$this->documentRoot = $documentRoot;
 		$this->rootUrl = $rootUrl;
 		$this->requestUri = $requestUri;
@@ -64,5 +71,13 @@ class Yampee_Locator
 	public function getRootUrl()
 	{
 		return $this->rootUrl;
+	}
+
+	/**
+	 * @return string
+	 */
+	public function getHttpHost()
+	{
+		return $this->httpHost;
 	}
 }

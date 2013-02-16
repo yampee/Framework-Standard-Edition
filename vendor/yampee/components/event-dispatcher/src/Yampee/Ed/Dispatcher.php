@@ -101,7 +101,11 @@ class Yampee_Ed_Dispatcher
 
 		foreach ($callables as $callable) {
 			$reflection = new ReflectionMethod($callable['object'], $callable['method']);
-			$parameters = (array) $reflection->invokeArgs($callable['object'], $parameters);
+			$newParameters = (array) $reflection->invokeArgs($callable['object'], $parameters);
+
+			if (! is_null($newParameters)) {
+				$parameters = $newParameters;
+			}
 		}
 	}
 }

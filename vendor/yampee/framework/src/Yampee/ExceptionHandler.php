@@ -132,7 +132,7 @@ class Yampee_ExceptionHandler
 				if ($twig instanceof Twig_Environment) {
 					if (file_exists(__APP__.'/app/views/error'.$exception->getStatusCode().'.html.twig')) {
 						$response->setContent($twig->render(
-							__APP__.'/app/views/error'.$exception->getStatusCode().'.html.twig',
+							'error'.$exception->getStatusCode().'.html.twig',
 							array('exception' => $exception)
 						));
 
@@ -140,7 +140,7 @@ class Yampee_ExceptionHandler
 						exit;
 					} elseif (file_exists(__APP__.'/app/views/error.html.twig')) {
 						$response->setContent($twig->render(
-							__APP__.'/app/views/error.html.twig',
+							'error.html.twig',
 							array('exception' => $exception)
 						));
 

@@ -96,24 +96,7 @@ class Yampee_Config extends ArrayObject
 	 */
 	public function compile()
 	{
-		$iterator = new RecursiveIteratorIterator(new RecursiveArrayIterator($this->getArrayCopy()));
-		$result = array();
-
-		foreach($iterator as $leafValue) {
-			$keys = array();
-
-			foreach (range(0, $iterator->getDepth()) as $depth) {
-				if (is_numeric($iterator->getSubIterator($depth)->key())) {
-					break;
-				}
-
-				$keys[] = $iterator->getSubIterator($depth)->key();
-			}
-
-			$result[implode('.', $keys)] = $leafValue;
-		}
-
-		$this->exchangeArray($result);
+		$this->exchangeArray(Yampee_Util_ArrayCompiler::compile($this->getArrayCopy()));
 
 		return $this;
 	}

@@ -90,8 +90,6 @@ class Yampee_Kernel
 		 */
 		$this->inDev = $inDev;
 
-		Yampee_Benchmark::start();
-
 		// Cache manager
 		$this->cache = new Yampee_Cache_Manager(new Yampee_Cache_Storage_Filesystem(
 			__APP__.'/app/cache/app.cache'
@@ -102,7 +100,6 @@ class Yampee_Kernel
 
 		// Configuration
 		$this->config = $this->loadConfig();
-		Yampee_Benchmark::markAs('config.booted');
 
 		// Container and services
 		$this->container = $this->loadContainer();
@@ -124,8 +121,6 @@ class Yampee_Kernel
 
 		$this->container->build();
 
-		Yampee_Benchmark::markAs('container.booted');
-
 		Yampee_ExceptionHandler::$twig = $this->container->get('twig');
 		Yampee_ExceptionHandler::$logger = $this->container->get('logger');
 
@@ -137,6 +132,9 @@ class Yampee_Kernel
 
 		// Load the router and its routes
 		$this->loadRouter();
+
+		// Load translations
+		$this->loadTranslations();
 
 		$this->container->get('logger')->debug('Kernel loaded');
 		$this->container->get('event_dispatcher')->notify('kernel.loaded', array($this->container));
@@ -158,8 +156,6 @@ class Yampee_Kernel
 		$this->container->set('request', $request);
 
 		Yampee_ExceptionHandler::$clientIp = $request->getClientIp();
-
-		Yampee_Benchmark::markAs('request.handled');
 
 		$locator = $this->generateRootUrl($request);
 
@@ -184,7 +180,7 @@ class Yampee_Kernel
 			__APP__.'/app/cache/actions.cache'
 		));
 
-		if ($cacheManager->has($locator->getRequestUri())) {
+		if (! $this->inDev && $cacheManager->has($locator->getRequestUri())) {
 			$cache = $cacheManager->get($locator->getRequestUri());
 
 			if ($cache['expire'] < time()) {
@@ -243,9 +239,6 @@ class Yampee_Kernel
 			}
 		}
 
-		$this->container->setParameter('kernel.benchmark', Yampee_Benchmark::getTimes());
-		$this->container->setParameter('kernel.memory_usage', Yampee_Benchmark::getMemoryUsage());
-
 		$this->container->get('twig')->addGlobal('app', $this->container);
 
 		$response = $action->invokeArgs($controller, $arguments);
@@ -263,8 +256,6 @@ class Yampee_Kernel
 
 			$this->annotationsReader->readReflector($action);
 		}
-
-		Yampee_Benchmark::markAs('request.dispatched');
 
 		if(! $response instanceof Yampee_Http_Response) {
 			throw new LogicException(sprintf(
@@ -293,7 +284,6 @@ class Yampee_Kernel
 
 		$this->container->get('logger')->debug('Response sent');
 
-		Yampee_Benchmark::markAs('response.sent');
 		$this->container->get('event_dispatcher')->notify('kernel.response', array($response));
 
 		// Finally send the response
@@ -383,6 +373,10 @@ class Yampee_Kernel
 
 		foreach ($extensions as $extension) {
 			$this->container->get('twig')->addExtension($extension);
+		}
+
+		if ($this->inDev) {
+			$this->container->get('twig')->addExtension(new Twig_Extension_Debug());
 		}
 	}
 
@@ -511,6 +505,54 @@ class Yampee_Kernel
 	}
 
 	/**
+	 * @return void
+	 */
+	protected function loadTranslations()
+	{
+		/*
+		 * Boot the translator and load the translations files
+		 */
+		$translator = $this->container->get('translator');
+		$translator->setLocale($this->container->getParameter('framework.locale'));
+
+		if ($this->inDev || ! $this->cache->has('translations')) {
+			// Find all the controllers files (in src/controllers)
+			$it = new DirectoryIterator(__APP__.'/src/translations');
+			$translations = array();
+
+			foreach ($it as $file) {
+				if (! $file->isDot() && $file->getExtension() == 'yml') {
+					$parts = array_reverse(explode('.', $file->getBasename('.yml')));
+
+					if (count($parts) > 0) {
+						$locale = $parts[0];
+						unset($parts[0]);
+						$domain = implode('.', array_reverse($parts));
+
+						$translations[$domain][$locale] = Yampee_Util_ArrayCompiler::compile(
+							$this->container->get('yaml')->load($file->getPathname())
+						);
+					}
+				}
+
+				$it->next();
+			}
+
+			$this->cache->set('translations', $translations);
+		} else {
+			$translations = $this->cache->get('translations');
+		}
+
+		foreach ($translations as $domain => $elements) {
+			foreach ($elements as $locale => $messages) {
+				foreach ($messages as $key => $message) {
+					$translator->registerMessage($key, $message, $locale, $domain);
+				}
+			}
+		}
+	}
+
+	/**
 	 * @return array
 	 */
 	protected function getCoreDefinitions()
@@ -519,6 +561,17 @@ class Yampee_Kernel
 		 * Yampee core container definitions
 		 */
 		return array(
+			// Benchmark
+			'benchmark' => array(
+				'class' => 'Yampee_Benchmark',
+				'tags' => array(
+					array('name' => 'event.listener', 'event' => 'kernel.loaded', 'method' => 'kernelLoaded'),
+					array('name' => 'event.listener', 'event' => 'kernel.request', 'method' => 'kernelRequest'),
+					array('name' => 'event.listener', 'event' => 'kernel.action', 'method' => 'kernelAction'),
+					array('name' => 'event.listener', 'event' => 'kernel.response', 'method' => 'kernelResponse'),
+				)
+			),
+
 			// Database
 			'database.dsn' => array(
 				'class' => 'Yampee_Db_Dsn',
@@ -578,6 +631,13 @@ class Yampee_Kernel
 					array('name' => 'twig.extension')
 				)
 			),
+			'twig.extensions.routing' => array(
+				'class' => 'Yampee_Twig_Routing',
+				'arguments' => array('@router', '@kernel'),
+				'tags' => array(
+					array('name' => 'twig.extension')
+				)
+			),
 			'twig.extensions.translation' => array(
 				'class' => 'Yampee_Twig_Translation',
 				'arguments' => array('@translator'),
@@ -629,7 +689,7 @@ class Yampee_Kernel
 		$rootUrl = '/'.trim(str_replace($documentRoot, '', $rootDir), '/');
 		$requestUri = str_replace($rootUrl, '', $requestUri);
 
-		$this->locator = new Yampee_Locator($documentRoot, $rootUrl, $requestUri);
+		$this->locator = new Yampee_Locator($request->get('http_host'), $documentRoot, $rootUrl, $requestUri);
 
 		return $this->locator;
 	}

@@ -63,14 +63,24 @@ abstract class Yampee_Controller extends Yampee_Di_ContainerAware
 		return new Yampee_Http_RedirectResponse($url, $status);
 	}
 
-	/**
-	 * @param string $route
-	 * @param array  $parameters
-	 * @return string
-	 */
-	public function generateUrl($route, $parameters = array())
+
+	public function generateUrl($route, $parameters = array(), $absolute = false, $ssl = false)
 	{
-		return $this->container->get('router')->generate($route, $parameters);
+		if ($absolute) {
+			$locator = $this->get('kernel')->getLocator();
+
+			$url = 'http';
+
+			if ($ssl) {
+				$url .= 's';
+			}
+
+			$url .= '://'.$locator->getHttpHost().$locator->getRootUrl();
+		} else {
+			$url = '';
+		}
+
+		return $url.$this->container->get('router')->generate($route, $parameters);
 	}
 
 	/**

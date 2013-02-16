@@ -58,11 +58,20 @@ class Yampee_Translator_Array implements Yampee_Translator_Interface
 	 *
 	 * @param string $message
 	 * @param array  $parameters
-	 * @return string
+	 * @param null   $locale
+	 * @param null   $domain
+	 * @return mixed|string
 	 */
-	public function translate($message, array $parameters = array())
+	public function translate($message, array $parameters = array(), $locale = null, $domain = null)
 	{
 		$replacements = array();
+
+		if (! $locale) {
+			$locale = $this->locale;
+		}
+		if (! $domain) {
+			$domain = $this->domain;
+		}
 
 		foreach ($parameters as $name => $value) {
 			$replacements['%'.$name.'%'] = $value;
@@ -71,7 +80,7 @@ class Yampee_Translator_Array implements Yampee_Translator_Interface
 		return str_replace(
 			array_keys($replacements),
 			array_values($replacements),
-			$this->registry[$this->locale][$this->domain][$message]
+			$this->registry[$locale][$domain][$message]
 		);
 	}
 

@@ -17,20 +17,20 @@ class Yampee_Benchmark
 	/**
 	 * @var array
 	 */
-	static protected $times;
+	protected $times;
 
 	/**
 	 * @var integer
 	 */
-	static protected $startMemoryUsage;
+	protected $startMemoryUsage;
 
 	/**
 	 * Start the benhmark.
 	 */
-	static public function start()
+	public function __construct()
 	{
-		self::$times = array('start' => microtime(true));
-		self::$startMemoryUsage = memory_get_usage();
+		$this->times = array('start' => microtime(true));
+		$this->startMemoryUsage = memory_get_usage();
 	}
 
 	/**
@@ -38,28 +38,65 @@ class Yampee_Benchmark
 	 *
 	 * @param $name
 	 */
-	static public function markAs($name)
+	public function markAs($name)
 	{
-		if (empty(self::$times)) {
-			self::start();
-		}
-
-		self::$times[$name] = (microtime(true) - self::$times['start']) * 1000;
+		$this->times[$name] = (microtime(true) - $this->times['start']) * 1000;
 	}
 
 	/**
 	 * @return array
 	 */
-	static public function getTimes()
+	public function getTimes()
 	{
-		return self::$times;
+		return $this->times;
+	}
+
+	/**
+	 * @param string $key
+	 * @return float
+	 */
+	public function get($key)
+	{
+		return $this->times[$key];
 	}
 
 	/**
 	 * @return array
 	 */
-	static public function getMemoryUsage()
+	public function getMemoryUsage()
 	{
-		return (memory_get_usage() - self::$startMemoryUsage) / (1024 * 1024);
+		return (memory_get_usage() - $this->startMemoryUsage) / (1024 * 1024);
+	}
+
+	/**
+	 * @return void
+	 */
+	public function kernelLoaded()
+	{
+		$this->markAs('kernel.loaded');
+	}
+
+	/**
+	 * @return void
+	 */
+	public function kernelRequest()
+	{
+		$this->markAs('kernel.request');
+	}
+
+	/**
+	 * @return void
+	 */
+	public function kernelAction()
+	{
+		$this->markAs('kernel.action');
+	}
+
+	/**
+	 * @return void
+	 */
+	public function kernelResponse()
+	{
+		$this->markAs('kernel.response');
 	}
 }
