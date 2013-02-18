@@ -10,16 +10,16 @@
  */
 
 /**
- * Cache storage that use files
+ * Cache file
  *
  * @author Titouan Galopin <galopintitouan@gmail.com>
  */
-class Yampee_Cache_Storage_Filesystem implements Yampee_Cache_Storage_Interface
+class Yampee_Cache_File
 {
 	/**
 	 * @var string
 	 */
-	protected $cacheFile;
+	protected $path;
 
 	/**
 	 * @var string
@@ -27,34 +27,42 @@ class Yampee_Cache_Storage_Filesystem implements Yampee_Cache_Storage_Interface
 	protected $cache;
 
 	/**
-	 * Constructor
-	 *
-	 * @param string $cacheFile
+	 * @param string $path
 	 */
-	public function __construct($cacheFile)
+	public function __construct($path)
 	{
-		$this->cacheFile = (string) $cacheFile;
+		$this->path = (string) $path;
 		$this->cache = array();
+
+		$this->open();
 	}
 
 	/**
-	 * @return Yampee_Cache_Storage_Filesystem
+	 * Destructor
+	 */
+	public function __destruct()
+	{
+		$this->close();
+	}
+
+	/**
+	 * @return Yampee_Cache_File
 	 */
 	public function open()
 	{
-		if (file_exists($this->cacheFile)) {
-			$this->cache = unserialize(file_get_contents($this->cacheFile));
+		if (file_exists($this->path)) {
+			$this->cache = unserialize(file_get_contents($this->path));
 		}
 
 		return $this;
 	}
 
 	/**
-	 * @return Yampee_Cache_Storage_Filesystem
+	 * @return Yampee_Cache_File
 	 */
 	public function close()
 	{
-		file_put_contents($this->cacheFile, serialize($this->cache));
+		file_put_contents($this->path, serialize($this->cache));
 
 		return $this;
 	}
@@ -85,7 +93,7 @@ class Yampee_Cache_Storage_Filesystem implements Yampee_Cache_Storage_Interface
 	/**
 	 * @param string $key
 	 * @param mixed  $value
-	 * @return Yampee_Cache_Storage_Filesystem
+	 * @return Yampee_Cache_File
 	 */
 	public function set($key, $value)
 	{
@@ -96,12 +104,12 @@ class Yampee_Cache_Storage_Filesystem implements Yampee_Cache_Storage_Interface
 
 	/**
 	 * @param string $key
-	 * @return bool
+	 * @return Yampee_Cache_File
 	 */
 	public function remove($key)
 	{
 		unset($this->cache[$key]);
 
-		return ! $this->has($key);
+		return $this;
 	}
 }

@@ -17,16 +17,30 @@
 class Yampee_Http_Request
 {
 	/**
-	 * @var array $attributes
+	 * @var array $post
 	 */
-	private $attributes;
+	private $post;
 
 	/**
-	 * @param array $attributes
+	 * @var array $post
 	 */
-	public function __construct($attributes = array())
+	private $get;
+
+	/**
+	 * @var array $post
+	 */
+	private $server;
+
+	/**
+	 * @param $get
+	 * @param $post
+	 * @param $server
+	 */
+	public function __construct(array $get, array $post, array $server)
 	{
-		$this->attributes = $attributes;
+		$this->get = $get;
+		$this->post = $post;
+		$this->server = $server;
 	}
 
 	/**
@@ -34,15 +48,7 @@ class Yampee_Http_Request
 	 */
 	public static function createFromGlobals()
 	{
-		return new self(array_merge($_GET, $_POST, $_SERVER));
-	}
-
-	/**
-	 * @param array $attributes
-	 */
-	public function setAttributes(array $attributes)
-	{
-		$this->attributes = $attributes;
+		return new self($_GET, $_POST, $_SERVER);
 	}
 
 	/**
@@ -50,7 +56,7 @@ class Yampee_Http_Request
 	 */
 	public function getAttributes()
 	{
-		return $this->attributes;
+		return array_merge($this->get, $this->post);
 	}
 
 	/**
@@ -61,12 +67,85 @@ class Yampee_Http_Request
 	public function get($key)
 	{
 		$attributes = array();
+		$all = array_merge($this->get, $this->post, $this->server);
 
-		foreach($this->attributes as $attrKey => $attrValue) {
+		foreach ($all as $attrKey => $attrValue) {
 			$attributes[strtolower($attrKey)] = $attrValue;
 		}
 
 		return (isset($attributes[strtolower($key)])) ? $attributes[strtolower($key)] : false;
+	}
+
+	/**
+	 * @param $key
+	 *
+	 * @return mixed
+	 */
+	public function getPost($key)
+	{
+		$attributes = array();
+
+		foreach ($this->post as $attrKey => $attrValue) {
+			$attributes[strtolower($attrKey)] = $attrValue;
+		}
+
+		return (isset($attributes[strtolower($key)])) ? $attributes[strtolower($key)] : false;
+	}
+
+	/**
+	 * @param $key
+	 *
+	 * @return mixed
+	 */
+	public function getGet($key)
+	{
+		$attributes = array();
+
+		foreach($this->get as $attrKey => $attrValue) {
+			$attributes[strtolower($attrKey)] = $attrValue;
+		}
+
+		return (isset($attributes[strtolower($key)])) ? $attributes[strtolower($key)] : false;
+	}
+
+	/**
+	 * @param $key
+	 *
+	 * @return mixed
+	 */
+	public function getServer($key)
+	{
+		$attributes = array();
+
+		foreach($this->server as $attrKey => $attrValue) {
+			$attributes[strtolower($attrKey)] = $attrValue;
+		}
+
+		return (isset($attributes[strtolower($key)])) ? $attributes[strtolower($key)] : false;
+	}
+
+	/**
+	 * @return array
+	 */
+	public function getAllPost()
+	{
+		return $this->post;
+	}
+
+	/**
+	 * @return array
+	 */
+	public function getAllGet()
+	{
+		return $this->get;
+	}
+
+	/**
+	 * @return array
+	 */
+	public function getAllServer()
+	{
+		return $this->server;
 	}
 
 	/**

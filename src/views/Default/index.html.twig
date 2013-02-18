@@ -3,13 +3,13 @@
 	<head>
 		<meta charset="UTF-8" />
 
-		<title>{% block title %}{{ 'index.title'|trans }}{% endblock %}</title>
+		<title>Yampee</title>
 
 		<link type="text/css" rel="stylesheet" href="{{ asset('css/yampee.css') }}" />
 	</head>
 	<body>
 		<div class="container">
-			<h1>{{ block('title') }}</h1>
+			<h1>Welcome to Yampee!</h1>
 
 			<h4>Welcome to Yampee - a PHP 5.2 modern, fast and secure framework you will love!</h4>
 
@@ -22,8 +22,6 @@
 			<p>
 				If you would like to edit this page you'll find it located at:
 				<code>src/views/index.html.twig</code>
-			<pre>{{ path('homepage') }}</pre>
-			<pre>{{ url('homepage') }}</pre>
 			</p>
 
 			<p>

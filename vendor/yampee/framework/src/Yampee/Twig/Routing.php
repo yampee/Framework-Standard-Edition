@@ -22,13 +22,19 @@ class Yampee_Twig_Routing extends Twig_Extension
 	protected $rootUrl;
 
 	/**
+	 * @var string
+	 */
+	protected $httpHost;
+
+	/**
 	 * @param Yampee_Routing_Router $router
 	 * @param Yampee_Kernel         $kernel
 	 */
 	public function __construct(Yampee_Routing_Router $router, Yampee_Kernel $kernel)
 	{
 		$this->router = $router;
-		$this->rootUrl = $kernel->getLocator()->getHttpHost().$kernel->getLocator()->getRootUrl();
+		$this->rootUrl = $kernel->getLocator()->getRootUrl();
+		$this->httpHost = $kernel->getLocator()->getHttpHost();
 	}
 
 	/**
@@ -57,7 +63,7 @@ class Yampee_Twig_Routing extends Twig_Extension
 	 */
 	public function generatePath($routeName, array $parameters = array())
 	{
-		return $this->router->generate($routeName, $parameters);
+		return $this->rootUrl.$this->router->generate($routeName, $parameters);
 	}
 
 	/**
@@ -74,6 +80,6 @@ class Yampee_Twig_Routing extends Twig_Extension
 			$protocol .= 's';
 		}
 
-		return $protocol.'://'.$this->rootUrl.$this->router->generate($routeName, $parameters);
+		return $protocol.'://'.$this->httpHost.$this->rootUrl.$this->router->generate($routeName, $parameters);
 	}
 }

@@ -86,13 +86,29 @@ class Yampee_Routing_Router
 	}
 
 	/**
-	 * @param string $routeName
-	 * @param array  $parameters
-	 * @return mixed
+	 * @param       $routeName
+	 * @param array $parameters
+	 * @return string
+	 * @throws InvalidArgumentException
 	 */
 	public function generate($routeName, array $parameters = array())
 	{
+		if (! $this->has($routeName)) {
+			throw new InvalidArgumentException(sprintf(
+				'Route "%s" does not exists and can not be generated', $routeName
+			));
+		}
+
 		return $this->get($routeName)->generate($parameters);
+	}
+
+	/**
+	 * @param string $routeName
+	 * @return boolean
+	 */
+	public function has($routeName)
+	{
+		return isset($this->routes[$routeName]);
 	}
 
 	/**

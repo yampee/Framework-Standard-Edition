@@ -91,9 +91,7 @@ class Yampee_Kernel
 		$this->inDev = $inDev;
 
 		// Cache manager
-		$this->cache = new Yampee_Cache_Manager(new Yampee_Cache_Storage_Filesystem(
-			__APP__.'/app/cache/app.cache'
-		));
+		$this->cache = new Yampee_Cache_Manager(__APP__.'/app/cache');
 
 		// Annotations reader
 		$this->annotationsReader = new Yampee_Annotations_Reader($inDev);
@@ -176,15 +174,13 @@ class Yampee_Kernel
 		/*
 		 * Read Server-Side cache to optimize load
 		 */
-		$cacheManager = new Yampee_Cache_Manager(new Yampee_Cache_Storage_Filesystem(
-			__APP__.'/app/cache/actions.cache'
-		));
+		$actionsCache = $this->cache->getFile('actions.cache');
 
-		if (! $this->inDev && $cacheManager->has($locator->getRequestUri())) {
-			$cache = $cacheManager->get($locator->getRequestUri());
+		if (! $this->inDev && $actionsCache->has($locator->getRequestUri())) {
+			$cache = $actionsCache->get($locator->getRequestUri());
 
 			if ($cache['expire'] < time()) {
-				$cacheManager->remove($locator->getRequestUri());
+				$actionsCache->remove($locator->getRequestUri());
 			} else {
 				$response = $cache['response'];
 
@@ -235,7 +231,7 @@ class Yampee_Kernel
 
 		foreach($action->getParameters() as $parameter) {
 			if(isset($routeAttributes[$parameter->getName()])) {
-				$arguments[] = $this->cast($routeAttributes[$parameter->getName()]);
+				$arguments[] = $routeAttributes[$parameter->getName()];
 			}
 		}
 
@@ -264,15 +260,20 @@ class Yampee_Kernel
 			));
 		}
 
-		// Read the HTTP cache annotation
+		/*
+		 * Catch @HttpCache() annotation
+		 */
 		$this->annotationsReader->registerAnnotation(new Yampee_Http_Bridge_Annotation_Cache($response));
 		$this->annotationsReader->readReflector($action);
 
-		// Read the Server-Side cache annotation
+		/*
+		 * Catch @Cache() annotation
+		 */
 		$this->annotationsReader->registerAnnotation(
-			new Yampee_Cache_Annotation($this->locator->getRequestUri(), $response)
+			new Yampee_Cache_Annotation($this->locator->getRequestUri(), $response, $this->cache->getFile('actions.cache'))
 		);
 		$this->annotationsReader->readReflector($action);
+
 
 		// If there is no problem, we clear logs and write a shorter description
 		$this->container->get('logger')->clearCurrentScriptLog();
@@ -300,15 +301,17 @@ class Yampee_Kernel
 		 *
 		 * Try to load it from cache if the production mode is enabled
 		 */
-		if ($this->inDev || ! $this->cache->has('config')) {
+		$appCache = $this->cache->getFile('app.cache');
+
+		if ($this->inDev || ! $appCache->has('config')) {
 			$yaml = new Yampee_Yaml_Yaml();
 
 			$config = new Yampee_Config($yaml->load(__APP__.'/app/config.yml'));
 			$config->compile();
 
-			$this->cache->set('config', $config);
+			$appCache->set('config', $config);
 		} else {
-			$config = $this->cache->get('config');
+			$config = $appCache->get('config');
 		}
 
 		return $config;
@@ -325,8 +328,9 @@ class Yampee_Kernel
 		 * Try to load services list from cache if the production mode is enabled
 		 */
 		$container = new Yampee_Di_Container();
+		$appCache = $this->cache->getFile('app.cache');
 
-		if ($this->inDev || ! $this->cache->has('services')) {
+		if ($this->inDev || ! $appCache->has('services')) {
 			$this->annotationsReader->registerAnnotation(new Yampee_Di_Bridge_Annotation_Service($container));
 
 			// Find all the services files (in src/services) and associate their classes.
@@ -354,9 +358,9 @@ class Yampee_Kernel
 				}
 			}
 
-			$this->cache->set('services', $container->getDefinitions());
+			$appCache->set('services', $container->getDefinitions());
 		} else {
-			$container->setDefinitions($this->cache->get('services'));
+			$container->setDefinitions($appCache->get('services'));
 		}
 
 		return $container;
@@ -411,10 +415,11 @@ class Yampee_Kernel
 		 * Try to load routes from cache if the production mode is enabled
 		 */
 		$router = $this->getContainer()->get('router');
+		$appCache = $this->cache->getFile('app.cache');
 
 		$this->annotationsReader->registerAnnotation(new Yampee_Routing_Bridge_Annotation_Route($router));
 
-		if ($this->inDev || ! $this->cache->has('routes')) {
+		if ($this->inDev || ! $appCache->has('routes')) {
 			// Find all the controllers files (in src/controllers)
 			$it = new RecursiveIteratorIterator(new RecursiveDirectoryIterator(
 				__APP__.'/src/controllers'
@@ -488,9 +493,9 @@ class Yampee_Kernel
 				}
 			}
 
-			$this->cache->set('routes', $cache);
+			$appCache->set('routes', $cache);
 		} else {
-			$routes = $this->cache->get('routes');
+			$routes = $appCache->get('routes');
 
 			foreach ($routes as $route) {
 				$this->container->get('router')->addRoute(new Yampee_Routing_Route(
@@ -515,7 +520,9 @@ class Yampee_Kernel
 		$translator = $this->container->get('translator');
 		$translator->setLocale($this->container->getParameter('framework.locale'));
 
-		if ($this->inDev || ! $this->cache->has('translations')) {
+		$appCache = $this->cache->getFile('app.cache');
+
+		if ($this->inDev || ! $appCache->has('translations')) {
 			// Find all the controllers files (in src/controllers)
 			$it = new DirectoryIterator(__APP__.'/src/translations');
 			$translations = array();
@@ -538,9 +545,9 @@ class Yampee_Kernel
 				$it->next();
 			}
 
-			$this->cache->set('translations', $translations);
+			$appCache->set('translations', $translations);
 		} else {
-			$translations = $this->cache->get('translations');
+			$translations = $appCache->get('translations');
 		}
 
 		foreach ($translations as $domain => $elements) {
@@ -588,6 +595,11 @@ class Yampee_Kernel
 			// Event dispatcher
 			'event_dispatcher' => array(
 				'class' => 'Yampee_Ed_Dispatcher',
+			),
+
+			// Form factory
+			'form_factory' => array(
+				'class' => 'Yampee_Form_Factory',
 			),
 
 			// Logger

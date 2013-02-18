@@ -41,6 +41,14 @@ abstract class Yampee_Controller extends Yampee_Di_ContainerAware
 	}
 
 	/**
+	 * @return Yampee_Form_Form
+	 */
+	public function createFromBuilder($method = 'POST')
+	{
+		return $this->get('form_factory')->createFormBuilder($method);
+	}
+
+	/**
 	 * Renders a template included in a response.
 	 *
 	 * @param string $name    The template name
@@ -66,21 +74,21 @@ abstract class Yampee_Controller extends Yampee_Di_ContainerAware
 
 	public function generateUrl($route, $parameters = array(), $absolute = false, $ssl = false)
 	{
-		if ($absolute) {
-			$locator = $this->get('kernel')->getLocator();
+		$locator = $this->get('kernel')->getLocator();
 
+		if ($absolute) {
 			$url = 'http';
 
 			if ($ssl) {
 				$url .= 's';
 			}
 
-			$url .= '://'.$locator->getHttpHost().$locator->getRootUrl();
+			$url .= '://'.$locator->getHttpHost();
 		} else {
 			$url = '';
 		}
 
-		return $url.$this->container->get('router')->generate($route, $parameters);
+		return $url.$locator->getRootUrl().$this->container->get('router')->generate($route, $parameters);
 	}
 
 	/**
@@ -121,5 +129,13 @@ abstract class Yampee_Controller extends Yampee_Di_ContainerAware
 	public function getTranslator()
 	{
 		return $this->container->get('translator');
+	}
+
+	/**
+	 * @return Yampee_Http_Request
+	 */
+	public function getRequest()
+	{
+		return $this->container->get('request');
 	}
 }

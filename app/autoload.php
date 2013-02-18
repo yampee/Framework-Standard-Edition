@@ -15,6 +15,7 @@ $loader->registerPrefix(array(
 		__APP__.'/vendor/yampee/components/database/src',
 		__APP__.'/vendor/yampee/components/dependency-injection/src',
 		__APP__.'/vendor/yampee/components/event-dispatcher/src',
+		__APP__.'/vendor/yampee/components/form/src',
 		__APP__.'/vendor/yampee/components/http/src',
 		__APP__.'/vendor/yampee/components/loader/src',
 		__APP__.'/vendor/yampee/components/logger/src',
@@ -29,6 +30,8 @@ $loader->registerPrefix(array(
 $loader->registerFallback(array(
 	__APP__.'/src/controllers',
 	__APP__.'/src/services',
+	__APP__.'/src/libraries',
+	__APP__.'/src/models',
 ));
 
 require __APP__.'/vendor/swiftmailer/lib/swift_required.php';

@@ -39,17 +39,15 @@ class Yampee_Cache_Annotation extends Yampee_Annotations_Definition_Abstract
 	/**
 	 * Constructor
 	 *
-	 * @param string               $requestUri
+	 * @param                      $requestUri
 	 * @param Yampee_Http_Response $response
+	 * @param Yampee_Cache_File    $cacheFile
 	 */
-	public function __construct($requestUri, Yampee_Http_Response $response)
+	public function __construct($requestUri, Yampee_Http_Response $response, Yampee_Cache_File $cacheFile)
 	{
 		$this->requestUri = $requestUri;
 		$this->response = $response;
-
-		$this->cacheWriter = new Yampee_Cache_Manager(new Yampee_Cache_Storage_Filesystem(
-			__APP__.'/app/cache/actions.cache'
-		));
+		$this->cacheWriter = $cacheFile;
 	}
 
 	/**
