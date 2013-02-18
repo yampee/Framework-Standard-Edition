@@ -537,7 +537,7 @@ class Yampee_Kernel
 						$domain = implode('.', array_reverse($parts));
 
 						$translations[$domain][$locale] = Yampee_Util_ArrayCompiler::compile(
-							$this->container->get('yaml')->load($file->getPathname())
+							(array) $this->container->get('yaml')->load($file->getPathname())
 						);
 					}
 				}
