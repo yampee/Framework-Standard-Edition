@@ -34,6 +34,10 @@ class Yampee_Cache_Manager
 	public function __construct($directory)
 	{
 		$this->directory = $directory;
+
+		if (! file_exists($this->directory)) {
+			mkdir($this->directory, 0777, true);
+		}
 	}
 
 	/**
